@@ -15,7 +15,12 @@ before_script:
 
 cache:
   paths:
-    - /opt/poetry/
+    - /root/.cache/pypoetry
+    - /root/.cache/pip
+
+
+variables:
+  PACKAGE_REGISTRY: "https://gitlab.com/api/v4/projects/$CI_PROJECT_ID/packages/pypi"
 
 test:
   stage: test
