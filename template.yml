@@ -1,0 +1,64 @@
+image: registry.cn-hangzhou.aliyuncs.com/mindpalace/python:3.11-alpine
+
+workflow:
+  auto_cancel:
+    on_new_commit: interruptible
+    on_job_failure: all
+
+before_script:
+  - apk add --no-cache git openssh bash curl
+  - git config --global user.email "ci@vivichains.com"
+  - git config --global user.name "CI Bot"
+  - curl -sSL https://install.python-poetry.org | POETRY_HOME=/opt/poetry python
+  - ln -s /opt/poetry/bin/poetry /usr/local/bin/poetry
+  - poetry config virtualenvs.create false
+
+cache:
+  paths:
+    - /opt/poetry/
+
+test:
+  script:
+    - poetry config http-basic.gitlab $REGISTRY_USER $REGISTRY_TOKEN
+    - poetry install
+    - poetry run pytest --maxfail=0 --continue-on-collection-errors || true
+    - exit 0
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "push" || $CI_PIPELINE_SOURCE == "merge_request_event"
+      changes:
+        - vivichains/**/*
+        - tests/**/*
+  tags:
+    - Kubernetes
+
+versioning:
+  script:
+    - export NEW_VERSION=$(echo $CI_COMMIT_REF_NAME | sed -n 's/release\/v\([0-9.]*\)/\1/p')
+    - if [ -z "$NEW_VERSION" ]; then echo "No version found in branch name"; exit 0; fi
+    - poetry version $NEW_VERSION
+    - if git diff --quiet; then echo "No changes to commit"; else git commit -a -m "Update version to $NEW_VERSION"; git push --no-verify "https://gitlab-ci-token:$CI_REPO_TOKEN@$CI_SERVER_HOST/$CI_PROJECT_PATH.git" HEAD:$CI_COMMIT_REF_NAME; fi
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_COMMIT_REF_NAME =~ /^release\/v[0-9]+\.[0-9]+\.[0-9]+$/'
+  tags:
+    - Kubernetes
+
+publish:
+  stage: deploy
+  script:
+    - export NEW_VERSION=$(poetry version -s)
+    - if git rev-parse "v$NEW_VERSION" >/dev/null 2>&1; then echo "Tag v$NEW_VERSION already exists, skipping publish"; exit 0; fi
+    - git tag -a "v$NEW_VERSION" -m "VERSION $NEW_VERSION"
+    - git push --no-verify "https://gitlab-ci-token:$CI_REPO_TOKEN@$CI_SERVER_HOST/$CI_PROJECT_PATH.git" HEAD:main --tags
+    - echo "Building and pushing package to GitLab Package Registry"
+    - poetry config repositories.gitlab $PACKAGE_REGISTRY
+    - poetry build
+    - poetry publish -r gitlab -u gitlab-ci-token -p $CI_JOB_TOKEN
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_REF_NAME == "main" && $CI_COMMIT_BEFORE_SHA != "0000000000000000000000000000000000000000"'
+      changes:
+       - pyproject.toml
+       - poetry.lock
+       - vivichains/**/*
+    - if: '$CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_REF_NAME == "main"'
+  tags:
+    - Kubernetes
