@@ -18,6 +18,7 @@ cache:
     - /opt/poetry/
 
 test:
+  stage: test
   script:
     - poetry config http-basic.gitlab $REGISTRY_USER $REGISTRY_TOKEN
     - poetry install
@@ -31,7 +32,8 @@ test:
   tags:
     - Kubernetes
 
-versioning:
+prepare-version:
+  stage: deploy
   script:
     - export NEW_VERSION=$(echo $CI_COMMIT_REF_NAME | sed -n 's/release\/v\([0-9.]*\)/\1/p')
     - if [ -z "$NEW_VERSION" ]; then echo "No version found in branch name"; exit 0; fi
