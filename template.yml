@@ -66,6 +66,7 @@ publish:
        - pyproject.toml
        - poetry.lock
        - vivichains/**/*
+       - spec.json
     - if: '$CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_REF_NAME == "main"'
   tags:
     - Kubernetes
