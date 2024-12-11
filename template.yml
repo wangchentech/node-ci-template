@@ -9,7 +9,7 @@ before_script:
   - apk add --no-cache git openssh bash curl
   - git config --global user.email "ci@vivichains.com"
   - git config --global user.name "CI Bot"
-  - curl -sSL https://install.python-poetry.org | POETRY_HOME=/opt/poetry python
+  - if [ ! -d "/opt/poetry" ]; then curl -sSL https://install.python-poetry.org | POETRY_HOME=/opt/poetry python; fi
   - ln -s /opt/poetry/bin/poetry /usr/local/bin/poetry
   - poetry config virtualenvs.create false
 
@@ -17,6 +17,7 @@ cache:
   paths:
     - /root/.cache/pypoetry
     - /root/.cache/pip
+    - /opt/poetry
 
 
 variables:
