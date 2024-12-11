@@ -29,8 +29,7 @@ test:
   script:
     - poetry config http-basic.gitlab $REGISTRY_USER $REGISTRY_TOKEN
     - poetry install
-    - poetry run pytest --maxfail=0 --continue-on-collection-errors || true
-    - exit 0
+    - poetry run pytest --maxfail=0 --continue-on-collection-errors
   rules:
     - if: $CI_PIPELINE_SOURCE == "push" || $CI_PIPELINE_SOURCE == "merge_request_event"
       changes:
