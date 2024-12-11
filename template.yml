@@ -6,7 +6,6 @@ workflow:
     on_job_failure: all
 
 before_script:
-  - apk add --no-cache git openssh bash curl
   - git config --global user.email "ci@vivichains.com"
   - git config --global user.name "CI Bot"
   - if [ ! -d "/opt/poetry" ]; then curl -sSL https://install.python-poetry.org | POETRY_HOME=/opt/poetry python; fi
