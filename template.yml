@@ -17,7 +17,7 @@ default:
   cache: &default_cache
     key:
       files:
-        - Gemfile.lock
+        - pyproject.toml
     paths:
       - /root/.cache/pypoetry
       - /root/.cache/pip
