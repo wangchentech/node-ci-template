@@ -12,12 +12,17 @@ before_script:
   - ln -s /opt/poetry/bin/poetry /usr/local/bin/poetry
   - poetry config virtualenvs.create false
 
-cache:
-  paths:
-    - /root/.cache/pypoetry
-    - /root/.cache/pip
-    - /opt/poetry
 
+default:
+  cache: &default_cache
+    key:
+      files:
+        - Gemfile.lock
+    paths:
+      - /root/.cache/pypoetry
+      - /root/.cache/pip
+      - /opt/poetry
+    policy: pull-push
 
 variables:
   PACKAGE_REGISTRY: "https://gitlab.com/api/v4/projects/$CI_PROJECT_ID/packages/pypi"
@@ -36,6 +41,8 @@ test:
         - tests/**/*
   tags:
     - Kubernetes
+  cache:
+    <<: *default_cache
 
 prepare-version:
   stage: deploy
@@ -48,6 +55,8 @@ prepare-version:
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_COMMIT_REF_NAME =~ /^release\/v[0-9]+\.[0-9]+\.[0-9]+$/'
   tags:
     - Kubernetes
+  cache:
+    <<: *default_cache
 
 publish:
   stage: deploy
@@ -70,3 +79,5 @@ publish:
     - if: '$CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_REF_NAME == "main"'
   tags:
     - Kubernetes
+  cache:
+    <<: *default_cache
