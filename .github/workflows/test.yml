@@ -7,10 +7,10 @@ on:
         description: 'Username for the PyPI registry'
         required: true
         type: string
+    secrets:
       PYPI_REGISTRY_PASSWORD:
         description: 'Password for the PyPI registry'
         required: true
-        type: string
 
 jobs:
   test:
