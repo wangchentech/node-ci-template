@@ -24,7 +24,16 @@ jobs:
         uses: abatilo/actions-poetry@v4
         with:
           poetry-version: '1.8.5'
+      - name: Setup a local virtual environment (if no poetry.toml file)
+        run: |
+          poetry config virtualenvs.create true --local
+          poetry config virtualenvs.in-project true --local
+      - name: Define a cache for the virtual environment based on the dependencies lock file
+        uses: actions/cache@v3
+        with:
+          path: ./.venv
+          key: venv-${{ hashFiles('poetry.lock') }}
       - name: Install dependencies
         run: poetry install
       - name: Run tests
-        run: pytest --maxfail=0 --continue-on-collection-errors
+        run: poetry run pytest --maxfail=0 --continue-on-collection-errors
