@@ -9,7 +9,7 @@ on:
       PYPI_REGISTRY_PASSWORD:
         description: 'Password for the PyPI registry'
         required: true
-jobs:
+jobs:    
   build:
     runs-on: ubuntu-latest
     steps:
