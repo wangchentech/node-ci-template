@@ -1,0 +1,33 @@
+name: Node Package Workflow
+
+on:
+  workflow_call:
+    inputs:
+      PYPI_REGISTRY_USERNAME:
+        description: 'Username for the PyPI registry'
+        required: true
+      PYPI_REGISTRY_PASSWORD:
+        description: 'Password for the PyPI registry'
+        required: true
+    secrets:
+      - PYPI_REGISTRY_USERNAME
+      - PYPI_REGISTRY_PASSWORD
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Setup Poetry
+        uses: abatilo/actions-poetry@v4
+        with:
+          poetry-version: '3.11'
+      - name: Install dependencies
+        run: poetry install
+      - name: Run tests
+        run: pytest --maxfail=0 --continue-on-collection-errors
