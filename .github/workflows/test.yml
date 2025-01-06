@@ -6,12 +6,11 @@ on:
       PYPI_REGISTRY_USERNAME:
         description: 'Username for the PyPI registry'
         required: true
+        type: string
       PYPI_REGISTRY_PASSWORD:
         description: 'Password for the PyPI registry'
         required: true
-    secrets:
-      - PYPI_REGISTRY_USERNAME
-      - PYPI_REGISTRY_PASSWORD
+        type: string
 
 jobs:
   test:
