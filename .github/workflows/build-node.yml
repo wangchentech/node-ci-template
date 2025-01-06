@@ -1,0 +1,41 @@
+name: Vivichains Node Test Workflow
+
+on:
+  workflow_call:
+    secrets:
+      PYPI_REGISTRY_USERNAME:
+        description: 'Username for the PyPI registry'
+        required: true
+      PYPI_REGISTRY_PASSWORD:
+        description: 'Password for the PyPI registry'
+        required: true
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Setup Poetry
+        uses: abatilo/actions-poetry@v4
+        with:
+          poetry-version: '1.8.5'
+      - name: Setup a local virtual environment (if no poetry.toml file)
+        run: |
+          poetry config virtualenvs.create true --local
+          poetry config virtualenvs.in-project true --local
+      - name: Define a cache for the virtual environment based on the dependencies lock file
+        uses: actions/cache@v3
+        with:
+          path: ./.venv
+          key: venv-${{ hashFiles('poetry.lock') }}
+      - name: Install dependencies
+        run: poetry install
+      - name: Build Package
+        run: |
+          poetry config repositories.private-pypi http://120.26.72.60:5002
+          poetry build
+          poetry publish -r private-pypi --username ${{ secrets.PYPI_REGISTRY_USERNAME }} --password ${{ secrets.PYPI_REGISTRY_PASSWORD }}
