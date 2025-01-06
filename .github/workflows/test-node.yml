@@ -1,13 +1,11 @@
-name: Node Package Workflow
+name: Vivichains Node Test Workflow
 
 on:
   workflow_call:
-    inputs:
+    secrets:
       PYPI_REGISTRY_USERNAME:
         description: 'Username for the PyPI registry'
         required: true
-        type: string
-    secrets:
       PYPI_REGISTRY_PASSWORD:
         description: 'Password for the PyPI registry'
         required: true
