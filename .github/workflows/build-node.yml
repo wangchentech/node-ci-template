@@ -70,4 +70,4 @@ jobs:
           git config --global user.name "CI Bot"
           version=$(poetry version -s)
           git tag -a "v$version" -m "Release version $version"
-          git push https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }} HEAD:${{ inputs.BRANCH_NAME }} --tags
+          git push https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }} --tags
