@@ -40,11 +40,11 @@ jobs:
           key: venv-${{ hashFiles('poetry.lock') }}
       - name: Install dependencies
         run: poetry install
-      - name: Build Package
-        run: |
-          poetry config repositories.private-pypi http://120.26.72.60:5002
-          poetry build
-          poetry publish -r private-pypi -u ${{ secrets.PYPI_REGISTRY_USERNAME }} -p ${{ secrets.PYPI_REGISTRY_PASSWORD }}
+      # - name: Build Package
+      #   run: |
+      #     poetry config repositories.private-pypi http://120.26.72.60:5002
+      #     poetry build
+      #     poetry publish -r private-pypi -u ${{ secrets.PYPI_REGISTRY_USERNAME }} -p ${{ secrets.PYPI_REGISTRY_PASSWORD }}
       - name: Tag the release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # 使用 GitHub 提供的 token
