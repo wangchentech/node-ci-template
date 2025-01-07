@@ -12,7 +12,7 @@ on:
     inputs:
       BRANCH_NAME:
         description: 'The branch name to use for the release'
-        required: true
+        required: false
         default: 'main'
         type: string
 jobs:    
