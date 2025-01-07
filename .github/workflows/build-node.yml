@@ -43,12 +43,26 @@ jobs:
           key: venv-${{ hashFiles('poetry.lock') }}
       - name: Install dependencies
         run: poetry install
-      # - name: Build Package
-      #   run: |
-      #     poetry config repositories.private-pypi http://120.26.72.60:5002
-      #     poetry build
-      #     poetry publish -r private-pypi -u ${{ secrets.PYPI_REGISTRY_USERNAME }} -p ${{ secrets.PYPI_REGISTRY_PASSWORD }}
+      - name: Check if version tag exists in branch
+        run: |
+          git fetch --tags
+          version=$(poetry version -s)
+          tag_exists=$(git tag -l "v$version" | grep -w "v$version" || true)
+          if [ -z "$tag_exists" ]; then
+            echo "Version tag does not exist, proceeding with tagging."
+            echo "VERSION_TAG_EXISTS=false" >> $GITHUB_ENV
+          else
+            echo "Version tag already exists, skipping tag creation."
+            echo "VERSION_TAG_EXISTS=true" >> $GITHUB_ENV
+          fi
+      - name: Build Package
+        if: env.VERSION_TAG_EXISTS == 'false'
+        run: |
+          poetry config repositories.private-pypi http://120.26.72.60:5002
+          poetry build
+          poetry publish -r private-pypi -u ${{ secrets.PYPI_REGISTRY_USERNAME }} -p ${{ secrets.PYPI_REGISTRY_PASSWORD }}
       - name: Tag the release
+        if: env.VERSION_TAG_EXISTS == 'false'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # 使用 GitHub 提供的 token
         run: |
