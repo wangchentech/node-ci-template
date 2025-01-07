@@ -14,7 +14,9 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-
+        with:
+          ref: ${{ inputs.BRANCH_NAME }}
+          fetch-depth: 0
       - name: Extract version from branch name
         id: extract_version
         run: |
@@ -25,7 +27,6 @@ jobs:
             echo "No version found in branch name"
             exit 0
           fi
-
       - name: Update pyproject.toml version
         if: env.NEW_VERSION != ''
         run: |
@@ -38,4 +39,4 @@ jobs:
         run: |
           git config --global user.email "ci@vivichains.com"
           git config --global user.name "CI Bot"
-          git diff --quiet || (git commit -a -m "Update version to ${{ env.NEW_VERSION }}" && git push --no-verify)
+          git diff --quiet || (git commit -a -m "Update version to ${{ env.NEW_VERSION }}" && git push https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }})
