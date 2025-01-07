@@ -1,0 +1,41 @@
+name: Prepare Version
+
+on:
+  workflow_call:
+    inputs:
+      BRANCH_NAME:
+        description: 'The branch name'
+        required: true
+        type: string
+
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Extract version from branch name
+        id: extract_version
+        run: |
+          if [[ "${{ inputs.BRANCH_NAME }}" =~ ^release/v([0-9]+\.[0-9]+\.[0-9]+)$ ]]; then
+            echo "Found version: ${BASH_REMATCH[1]}"
+            echo "NEW_VERSION=${BASH_REMATCH[1]}" >> $GITHUB_ENV
+          else
+            echo "No version found in branch name"
+            exit 0
+          fi
+
+      - name: Update pyproject.toml version
+        if: env.NEW_VERSION != ''
+        run: |
+          echo "Updating version in pyproject.toml to ${{ env.NEW_VERSION }}"
+          sed -i "s/version = \".*\"/version = \"${{ env.NEW_VERSION }}\"/" pyproject.toml
+          cat pyproject.toml  # Optional: to check the changes
+
+      - name: Commit and push changes
+        if: env.NEW_VERSION != ''
+        run: |
+          git config --global user.email "ci@vivichains.com"
+          git config --global user.name "CI Bot"
+          git diff --quiet || (git commit -a -m "Update version to ${{ env.NEW_VERSION }}" && git push --no-verify)

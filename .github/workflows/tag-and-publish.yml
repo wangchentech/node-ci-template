@@ -1,0 +1,73 @@
+name: Publish Vivichains Node
+
+on:
+  workflow_call:
+    secrets:
+      PYPI_REGISTRY_USERNAME:
+        description: 'Username for the PyPI registry'
+        required: true
+      PYPI_REGISTRY_PASSWORD:
+        description: 'Password for the PyPI registry'
+        required: true
+    inputs:
+      BRANCH_NAME:
+        description: 'The branch name to use for the release'
+        required: false
+        default: 'main'
+        type: string
+jobs:    
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.BRANCH_NAME }}
+          fetch-tag: true
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Setup Poetry
+        uses: abatilo/actions-poetry@v4
+        with:
+          poetry-version: '1.8.5'
+      - name: Setup a local virtual environment (if no poetry.toml file)
+        run: |
+          poetry config virtualenvs.create true --local
+          poetry config virtualenvs.in-project true --local
+      - name: Define a cache for the virtual environment based on the dependencies lock file
+        uses: actions/cache@v3
+        with:
+          path: ./.venv
+          key: venv-${{ hashFiles('poetry.lock') }}
+      - name: Install dependencies
+        run: poetry install
+      - name: Check if version tag exists in branch
+        run: |
+          git fetch --tags
+          version=$(poetry version -s)
+          tag_exists=$(git tag -l "v$version" | grep -w "v$version" || true)
+          if [ -z "$tag_exists" ]; then
+            echo "Version tag does not exist, proceeding with tagging."
+            echo "VERSION_TAG_EXISTS=false" >> $GITHUB_ENV
+          else
+            echo "Version tag already exists, skipping tag creation."
+            echo "VERSION_TAG_EXISTS=true" >> $GITHUB_ENV
+          fi
+      - name: Publish Package
+        if: env.VERSION_TAG_EXISTS == 'false'
+        run: |
+          poetry config repositories.private-pypi http://120.26.72.60:5002
+          poetry build
+          poetry publish -r private-pypi -u ${{ secrets.PYPI_REGISTRY_USERNAME }} -p ${{ secrets.PYPI_REGISTRY_PASSWORD }}
+      - name: Tag the release
+        if: env.VERSION_TAG_EXISTS == 'false'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # 使用 GitHub 提供的 token
+        run: |
+          git config --global user.email "ci@vivichains.com"
+          git config --global user.name "CI Bot"
+          version=$(poetry version -s)
+          git tag -a "v$version" -m "Release version $version"
+          git push https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }} --tags
