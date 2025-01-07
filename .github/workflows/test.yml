@@ -1,4 +1,4 @@
-name: Vivichains Node Test Workflow
+name: Test Vivichains Node
 
 on:
   workflow_call:

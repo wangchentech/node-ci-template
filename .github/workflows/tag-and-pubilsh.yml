@@ -1,4 +1,4 @@
-name: Vivichains Node Test Workflow
+name: Publish Vivichains Node
 
 on:
   workflow_call:
@@ -55,7 +55,7 @@ jobs:
             echo "Version tag already exists, skipping tag creation."
             echo "VERSION_TAG_EXISTS=true" >> $GITHUB_ENV
           fi
-      - name: Build Package
+      - name: Publish Package
         if: env.VERSION_TAG_EXISTS == 'false'
         run: |
           poetry config repositories.private-pypi http://120.26.72.60:5002
