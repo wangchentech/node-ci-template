@@ -9,6 +9,12 @@ on:
       PYPI_REGISTRY_PASSWORD:
         description: 'Password for the PyPI registry'
         required: true
+    inputs:
+      BRANCH_NAME:
+        description: 'The branch name to use for the release'
+        required: true
+        default: 'main'
+        type: string
 jobs:    
   build:
     runs-on: ubuntu-latest
@@ -47,4 +53,4 @@ jobs:
           git config --global user.name "CI Bot"
           version=$(poetry version -s)
           git tag -a "v$version" -m "Release version $version"
-          git push https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }} $TAG_NAME
+          git push https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }} HEAD:${{ inputs.BRANCH_NAME }} --tags
