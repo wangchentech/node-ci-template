@@ -41,6 +41,8 @@ jobs:
           poetry publish -r private-pypi -u ${{ secrets.PYPI_REGISTRY_USERNAME }} -p ${{ secrets.PYPI_REGISTRY_PASSWORD }}
       - name: Tag the release
         run: |
+          git config --global user.email "ci@vivichains.com"
+          git config --global user.name "CI Bot"
           version=$(poetry version -s)
           git tag -a "v$version" -m "Release version $version"
           git push origin "v$version"
