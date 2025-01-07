@@ -26,6 +26,8 @@ jobs:
           poetry-version: '1.8.5'
       - name: Setup a local virtual environment (if no poetry.toml file)
         run: |
+          poetry config repositories.private-pypi http://120.26.72.60:5002
+          poetry config http-basic.private-pypi ${{ secrets.PYPI_REGISTRY_USERNAME }} ${{ secrets.PYPI_REGISTRY_PASSWORD }}
           poetry config virtualenvs.create true --local
           poetry config virtualenvs.in-project true --local
       - name: Define a cache for the virtual environment based on the dependencies lock file
