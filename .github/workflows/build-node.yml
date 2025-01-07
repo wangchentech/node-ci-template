@@ -40,9 +40,11 @@ jobs:
           poetry build
           poetry publish -r private-pypi -u ${{ secrets.PYPI_REGISTRY_USERNAME }} -p ${{ secrets.PYPI_REGISTRY_PASSWORD }}
       - name: Tag the release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # 使用 GitHub 提供的 token
         run: |
           git config --global user.email "ci@vivichains.com"
           git config --global user.name "CI Bot"
           version=$(poetry version -s)
           git tag -a "v$version" -m "Release version $version"
-          git push origin "v$version"
+          git push https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }} $TAG_NAME
