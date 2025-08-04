@@ -9,11 +9,24 @@ on:
       PYPI_REGISTRY_PASSWORD:
         description: 'Password for the PyPI registry'
         required: true
+      DOCKER_REGISTRY_USERNAME:
+        description: 'Username for the Docker registry'
+        required: false
+      DOCKER_REGISTRY_PASSWORD:
+        description: 'Password for the Docker registry'
+        required: false
+      DOCKER_REGISTRY_URL:
+        description: 'Docker registry URL'
+        required: false
     inputs:
       BRANCH_NAME:
         description: 'The branch name to use for the release'
         required: false
         default: 'main'
+        type: string
+      DOCKER_IMAGE_NAME:
+        description: 'The Docker image name to use (e.g., my-org/my-app). If not provided, defaults to github.repository'
+        required: false
         type: string
 jobs:    
   build:
@@ -73,3 +86,53 @@ jobs:
           version=$(poetry version -s)
           git tag -a "v$version" -m "Release version $version"
           git push https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }} "v$version"
+      
+      - name: Check for Dockerfile
+        if: env.VERSION_TAG_EXISTS == 'false' && inputs.BRANCH_NAME == 'main'
+        run: |
+          if [ -f "Dockerfile" ]; then
+            echo "Dockerfile found, proceeding with Docker build."
+            echo "DOCKERFILE_EXISTS=true" >> $GITHUB_ENV
+          else
+            echo "No Dockerfile found, skipping Docker build."
+            echo "DOCKERFILE_EXISTS=false" >> $GITHUB_ENV
+          fi
+      
+      - name: Set up Docker Buildx
+        if: env.VERSION_TAG_EXISTS == 'false' && inputs.BRANCH_NAME == 'main' && env.DOCKERFILE_EXISTS == 'true'
+        uses: docker/setup-buildx-action@v3
+      
+      - name: Login to Docker Registry
+        if: env.VERSION_TAG_EXISTS == 'false' && inputs.BRANCH_NAME == 'main' && env.DOCKERFILE_EXISTS == 'true' && secrets.DOCKER_REGISTRY_USERNAME != ''
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ secrets.DOCKER_REGISTRY_URL || 'docker.io' }}
+          username: ${{ secrets.DOCKER_REGISTRY_USERNAME }}
+          password: ${{ secrets.DOCKER_REGISTRY_PASSWORD }}
+      
+      - name: Extract metadata for Docker
+        if: env.VERSION_TAG_EXISTS == 'false' && inputs.BRANCH_NAME == 'main' && env.DOCKERFILE_EXISTS == 'true'
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: |
+            ${{ secrets.DOCKER_REGISTRY_URL && format('{0}/{1}', secrets.DOCKER_REGISTRY_URL, inputs.DOCKER_IMAGE_NAME || github.repository) || inputs.DOCKER_IMAGE_NAME || github.repository }}
+          tags: |
+            type=ref,event=tag
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{major}}
+            type=raw,value=latest,enable={{is_default_branch}}
+      
+      - name: Build and push Docker image
+        if: env.VERSION_TAG_EXISTS == 'false' && inputs.BRANCH_NAME == 'main' && env.DOCKERFILE_EXISTS == 'true'
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile
+          push: ${{ secrets.DOCKER_REGISTRY_USERNAME != '' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          platforms: linux/amd64,linux/arm64
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
