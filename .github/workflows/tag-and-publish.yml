@@ -144,3 +144,6 @@ jobs:
           platforms: linux/amd64,linux/arm64
           cache-from: type=gha
           cache-to: type=gha,mode=max
+          build-args: |
+            PYPI_REGISTRY_USERNAME=${{ secrets.PYPI_REGISTRY_USERNAME }}
+            PYPI_REGISTRY_PASSWORD=${{ secrets.PYPI_REGISTRY_PASSWORD }}
