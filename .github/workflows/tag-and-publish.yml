@@ -129,16 +129,24 @@ jobs:
       - name: Extract metadata for Docker
         if: env.VERSION_TAG_EXISTS == 'false' && (inputs.BRANCH_NAME == 'main' || github.ref_name == 'main') && env.DOCKERFILE_EXISTS == 'true' && secrets.DOCKER_REGISTRY_URL != '' && secrets.DOCKER_REGISTRY_USERNAME != '' && secrets.DOCKER_REGISTRY_PASSWORD != ''
         id: meta
-        uses: docker/metadata-action@v5
-        with:
-          images: |
-            ${{ secrets.DOCKER_REGISTRY_URL }}/${{ inputs.DOCKER_IMAGE_NAME || github.repository }}
-          tags: |
-            type=ref,event=tag
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
-            type=semver,pattern={{major}}
-            type=raw,value=latest,enable={{is_default_branch}}
+        run: |
+          version=$(poetry version -s)
+          registry="${{ secrets.DOCKER_REGISTRY_URL }}"
+          image_name="${{ inputs.DOCKER_IMAGE_NAME || github.repository }}"
+          
+          # 生成标签
+          echo "tags<<EOF" >> $GITHUB_OUTPUT
+          echo "${registry}/${image_name}:${version}" >> $GITHUB_OUTPUT
+          echo "${registry}/${image_name}:latest" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+          
+          # 生成标签字符串用于 docker build
+          echo "tags-string=${registry}/${image_name}:${version},${registry}/${image_name}:latest" >> $GITHUB_OUTPUT
+      
+      - name: Debug generated tags
+        if: env.VERSION_TAG_EXISTS == 'false' && (inputs.BRANCH_NAME == 'main' || github.ref_name == 'main') && env.DOCKERFILE_EXISTS == 'true' && secrets.DOCKER_REGISTRY_URL != '' && secrets.DOCKER_REGISTRY_USERNAME != '' && secrets.DOCKER_REGISTRY_PASSWORD != ''
+        run: |
+          echo "Generated tags: ${{ steps.meta.outputs.tags-string }}"
       
       - name: Build and push Docker image
         if: env.VERSION_TAG_EXISTS == 'false' && (inputs.BRANCH_NAME == 'main' || github.ref_name == 'main') && env.DOCKERFILE_EXISTS == 'true' && secrets.DOCKER_REGISTRY_URL != '' && secrets.DOCKER_REGISTRY_USERNAME != '' && secrets.DOCKER_REGISTRY_PASSWORD != ''
@@ -147,8 +155,7 @@ jobs:
           context: .
           file: ./Dockerfile
           push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
+          tags: ${{ steps.meta.outputs.tags-string }}
           platforms: linux/amd64,linux/arm64
           cache-from: type=gha
           cache-to: type=gha,mode=max
