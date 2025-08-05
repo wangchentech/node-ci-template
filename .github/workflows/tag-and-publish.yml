@@ -87,8 +87,16 @@ jobs:
           git tag -a "v$version" -m "Release version $version"
           git push https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }} "v$version"
       
+      - name: Debug branch information
+        if: env.VERSION_TAG_EXISTS == 'false'
+        run: |
+          echo "inputs.BRANCH_NAME: '${{ inputs.BRANCH_NAME }}'"
+          echo "github.ref_name: '${{ github.ref_name }}'"
+          echo "github.ref: '${{ github.ref }}'"
+          echo "Current branch check result: ${{ inputs.BRANCH_NAME == 'main' || github.ref_name == 'main' }}"
+      
       - name: Check for Dockerfile
-        if: env.VERSION_TAG_EXISTS == 'false' && inputs.BRANCH_NAME == 'main'
+        if: env.VERSION_TAG_EXISTS == 'false' && (inputs.BRANCH_NAME == 'main' || github.ref_name == 'main')
         run: |
           if [ -f "Dockerfile" ]; then
             echo "Dockerfile found, proceeding with Docker build."
@@ -99,11 +107,11 @@ jobs:
           fi
       
       - name: Set up Docker Buildx
-        if: env.VERSION_TAG_EXISTS == 'false' && inputs.BRANCH_NAME == 'main' && env.DOCKERFILE_EXISTS == 'true'
+        if: env.VERSION_TAG_EXISTS == 'false' && (inputs.BRANCH_NAME == 'main' || github.ref_name == 'main') && env.DOCKERFILE_EXISTS == 'true'
         uses: docker/setup-buildx-action@v3
       
       - name: Login to Docker Registry
-        if: env.VERSION_TAG_EXISTS == 'false' && inputs.BRANCH_NAME == 'main' && env.DOCKERFILE_EXISTS == 'true'
+        if: env.VERSION_TAG_EXISTS == 'false' && (inputs.BRANCH_NAME == 'main' || github.ref_name == 'main') && env.DOCKERFILE_EXISTS == 'true'
         uses: docker/login-action@v3
         with:
           registry: ${{ secrets.DOCKER_REGISTRY_URL || 'docker.io' }}
@@ -111,7 +119,7 @@ jobs:
           password: ${{ secrets.DOCKER_REGISTRY_PASSWORD }}
       
       - name: Extract metadata for Docker
-        if: env.VERSION_TAG_EXISTS == 'false' && inputs.BRANCH_NAME == 'main' && env.DOCKERFILE_EXISTS == 'true'
+        if: env.VERSION_TAG_EXISTS == 'false' && (inputs.BRANCH_NAME == 'main' || github.ref_name == 'main') && env.DOCKERFILE_EXISTS == 'true'
         id: meta
         uses: docker/metadata-action@v5
         with:
@@ -125,7 +133,7 @@ jobs:
             type=raw,value=latest,enable={{is_default_branch}}
       
       - name: Build and push Docker image
-        if: env.VERSION_TAG_EXISTS == 'false' && inputs.BRANCH_NAME == 'main' && env.DOCKERFILE_EXISTS == 'true'
+        if: env.VERSION_TAG_EXISTS == 'false' && (inputs.BRANCH_NAME == 'main' || github.ref_name == 'main') && env.DOCKERFILE_EXISTS == 'true'
         uses: docker/build-push-action@v5
         with:
           context: .
