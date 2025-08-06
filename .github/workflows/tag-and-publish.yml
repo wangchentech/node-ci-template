@@ -150,7 +150,7 @@ jobs:
       
       - name: Build and push Docker image
         if: env.VERSION_TAG_EXISTS == 'false' && (inputs.BRANCH_NAME == 'main' || github.ref_name == 'main') && env.DOCKERFILE_EXISTS == 'true'
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         with:
           context: .
           file: ./Dockerfile
