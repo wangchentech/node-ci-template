@@ -136,14 +136,22 @@ jobs:
           registry="${{ secrets.DOCKER_REGISTRY_URL }}"
           image_name="${{ inputs.DOCKER_IMAGE_NAME || github.repository }}"
           
+          # 解析版本号并生成适当的latest标签
+          major_minor=$(echo "$version" | cut -d. -f1,2)
+          latest_tag="${major_minor}-latest"
+          
+          echo "Version: $version"
+          echo "Major.Minor: $major_minor"
+          echo "Latest tag: $latest_tag"
+          
           # 生成标签
           echo "tags<<EOF" >> $GITHUB_OUTPUT
           echo "${registry}/${image_name}:${version}" >> $GITHUB_OUTPUT
-          echo "${registry}/${image_name}:latest" >> $GITHUB_OUTPUT
+          echo "${registry}/${image_name}:${latest_tag}" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
           
           # 生成标签字符串用于 docker build
-          echo "tags-string=${registry}/${image_name}:${version},${registry}/${image_name}:latest" >> $GITHUB_OUTPUT
+          echo "tags-string=${registry}/${image_name}:${version},${registry}/${image_name}:${latest_tag}" >> $GITHUB_OUTPUT
       
       - name: Debug generated tags
         if: env.VERSION_TAG_EXISTS == 'false' && (inputs.BRANCH_NAME == 'main' || github.ref_name == 'main') && env.DOCKERFILE_EXISTS == 'true'
@@ -158,7 +166,7 @@ jobs:
           file: ./Dockerfile
           push: true
           tags: ${{ steps.meta.outputs.tags-string }}
-          load: false
+          platforms: linux/amd64
           build-args: |
             PYPI_REGISTRY_USERNAME=${{ secrets.PYPI_REGISTRY_USERNAME }}
             PYPI_REGISTRY_PASSWORD=${{ secrets.PYPI_REGISTRY_PASSWORD }}
